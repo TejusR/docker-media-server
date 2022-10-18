@@ -1,7 +1,8 @@
-.env
+
 jellyfin
 sonarr
 radarr
 ombi
 deluge
 jackett
+letsencrypt

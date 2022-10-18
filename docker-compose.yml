@@ -12,9 +12,12 @@ services:
       - "${TVDIR}:/media/tv"
       - "${MOVIESDIR}:/media/movies"
       - /etc/localtime:/etc/localtime:ro
-    user: "1000:1000"
+    user: "1001:1002"
     labels:
       - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin.tls.certresolver=myresolver"
   sonarr:
     container_name: sonarr
     image: linuxserver/sonarr:preview
@@ -35,6 +38,9 @@ services:
       - deluge
     labels:
       - "traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr.tls.certresolver=myresolver"
   radarr:
     container_name: radarr
     image: linuxserver/radarr
@@ -55,6 +61,9 @@ services:
       - deluge
     labels:
       - "traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr.entrypoints=websecure"
+      - "traefik.http.routers.radarr.tls.certresolver=myresolver"
   ombi:
     image: linuxserver/ombi
     container_name: ombi
@@ -91,6 +100,9 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.http.routers.deluge.rule=Host(`deluge.${DOMAIN}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.deluge.entrypoints=websecure"
+      - "traefik.http.routers.deluge.tls.certresolver=myresolver"
   jackett:
     image: linuxserver/jackett
     container_name: jackett
@@ -106,6 +118,9 @@ services:
       - /etc/localtime:/etc/localtime:ro
     labels:
       - "traefik.http.routers.jackett.rule=Host(`jackett.${DOMAIN}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.jackett.entrypoints=websecure"
+      - "traefik.http.routers.jackett.tls.certresolver=myresolver"
   heimdall:
     image: linuxserver/heimdall
     container_name: heimdall
@@ -120,13 +135,26 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.http.routers.heimdall.rule=Host(`${DOMAIN}`,`${IP}`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.heimdall.entrypoints=websecure"
+      - "traefik.http.routers.heimdall.tls.certresolver=myresolver"
   traefik:
     image: traefik:v2.0 # The official v2.0 Traefik docker image
     container_name: traefik
-    command: --api --providers.docker # Enables the web UI and tells Traefik to listen to docker
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.myresolver.acme.email=rameshtejus@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80" # The HTTP port
       - "9090:8080" # The Web UI (enabled by --api)
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+      - "./letsencrypt:/letsencrypt"
 
